@@ -133,6 +133,8 @@ lambda4_bar_sol = Z[5,:]
 ## Plots
 fig = plt.figure('Optimal Ascent from Flat Moon')
 
+# Indices are modifed as compared with the code in the book so that the
+# plots appears in the same order as in the book
 ax = fig.add_subplot(323)
 ax.plot(time, x_sol/1000)
 ax.set_ylabel('x, km')
@@ -168,20 +170,3 @@ ax.plot(x_sol/1000, y_sol/1000)
 ax.set_ylabel('y, km')
 ax.set_xlabel('x, km')
 ax.grid()
-
-
-
-# subplot(3,2,5);plot(time,np.rad2deg(np.atan(lambda4_bar_sol)));
-# ylabel('\alpha, deg','fontsize',14);
-# xlabel('Time, sec','fontsize',14);
-# grid on; 
-# hold on;
-# subplot(3,2,6);plot(time,lambda4_bar_sol);
-# ylabel('\lambda_4','fontsize',14);
-# xlabel('Time, sec','fontsize',14);
-# grid on; hold on;
-# # Plot of ascent trajectory in y versus x coordinates [km]
-# figure;
-# plot(x_sol/1000, y_sol/1000); grid on; axis equal
-# xlabel('Downrange Position, x, km','fontsize',14)
-# ylabel('Altitude, y, km','fontsize',14)
