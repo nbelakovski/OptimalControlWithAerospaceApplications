@@ -27,7 +27,7 @@ g_accel = 9.80665 # m/sˆ2, gravitational acceleration of Earth
 f = 2.1e6 # N, thrust of the first stage of Titan II Rocket
 h_scale = 8440 # m, atmospheric scale-height
 beta = h/h_scale #[Nondim], constant used to reduce EOM equations
-rhoref = 1.225 # kg/mˆ3, reference density
+rhoref = 1.225 # kg/m^3, reference density
 A = 7.069 # mˆ2, aerodynamic reference area (cross-sectional area)
 #---------------------------------------------------------------------------
 ## Boundary Conditions
@@ -60,7 +60,7 @@ eta = rhoref*CD*A/2
 t0 = 0
 # list initial conditions in yinit, use zero if unknown
 # guess for initial state and costate variables
-yinit = np.array([ybar0, Vxbar0, Vybar0, 0, -1, 0], dtype=np.float64)
+yinit = np.array([xbar0, ybar0, Vxbar0, Vybar0, 0, -1, 0], dtype=np.float64)
 tf_guess = 700 # sec, initial guess for final time
 # Because the final time is free, we must parameterize the problem by
 # the unknown final time, tf. Create a nondimensional time vector,
@@ -83,16 +83,16 @@ solinit = np.array([yinit for _ in range(Nt)]).T
 ## Solution for the NO DRAG and CONSTANT MASS case
 #---------------------------------------------------------------------------
 def ascent_odes_tf(tau, X, p):
-    # xbar = X[0]
-    ybar = X[0]
-    Vxbar = X[1]
-    Vybar = X[2]
-    lambda_2_bar = X[3]
-    lambda_3_bar = X[4]
-    lambda_4_bar = X[5]
+    xbar = X[0]
+    ybar = X[1]
+    Vxbar = X[2]
+    Vybar = X[3]
+    lambda_2_bar = X[4]
+    lambda_3_bar = X[5]
+    lambda_4_bar = X[6]
     tf = p[0]
     m = m0 - abs(mdot)*tau*tf
-    # xbardot = Vxbar*Vc/h
+    xbardot = Vxbar*Vc/h
     ybardot = Vybar*Vc/h
     
     Vxbardot = np.zeros(len(tau))
@@ -101,13 +101,13 @@ def ascent_odes_tf(tau, X, p):
     lambda_3_bardot = np.zeros(len(tau))
     lambda_4_bardot = np.zeros(len(tau))
     for i in range(len(tau)):
-        # xbar = X[0, i]
-        ybar = X[0, i]
-        Vxbar = X[1, i]
-        Vybar = X[2, i]
-        lambda_2_bar = X[3, i]
-        lambda_3_bar = X[4, i]
-        lambda_4_bar = X[5, i]
+        xbar = X[0, i]
+        ybar = X[1, i]
+        Vxbar = X[2, i]
+        Vybar = X[3, i]
+        lambda_2_bar = X[4, i]
+        lambda_3_bar = X[5, i]
+        lambda_4_bar = X[6, i]
         m = m0 - abs(mdot)*tau[i]*tf
         Vxbardot[i] = (f/Vc*(-lambda_3_bar/np.sqrt(lambda_3_bar**2 + lambda_4_bar**2)) \
             - eta*np.exp(-ybar*beta)*Vxbar*np.sqrt(Vxbar**2 + Vybar**2)*Vc)/m
@@ -126,30 +126,30 @@ def ascent_odes_tf(tau, X, p):
                 + 2*Vybar**2) \
                 + lambda_3_bar*Vxbar*Vybar)/np.sqrt(Vxbar**2+Vybar**2)/m
 
-    dX_dtau = tf * np.array([ybardot, Vxbardot, Vybardot, lambda_2_bardot, lambda_3_bardot, lambda_4_bardot])
+    dX_dtau = tf * np.array([xbardot, ybardot, Vxbardot, Vybardot, lambda_2_bardot, lambda_3_bardot, lambda_4_bardot])
     return dX_dtau
 
 def ascent_bcs_tf(ya, yb, p):
-    # xbari = ya[0]  # use i instead of 0 to distinguish from desired initial
-    ybari = ya[0]
-    Vxbari = ya[1]
-    Vybari = ya[2]
-    lambda_2_bari = ya[3]
-    lambda_3_bari = ya[4]
-    lambda_4_bari = ya[5]
-    # xbarff = yb[0]  # use two f's to distinguish from the desired final
-    ybarff = yb[0]
-    Vxbarff = yb[1]
-    Vybarff = yb[2]
-    lambda_2_barff = yb[3]
-    lambda_3_barff = yb[4]
-    lambda_4_barff = yb[5]
+    xbari = ya[0]  # use i instead of 0 to distinguish from desired initial
+    ybari = ya[1]
+    Vxbari = ya[2]
+    Vybari = ya[3]
+    lambda_2_bari = ya[4]
+    lambda_3_bari = ya[5]
+    lambda_4_bari = ya[6]
+    xbarff = yb[0]  # use two f's to distinguish from the desired final
+    ybarff = yb[1]
+    Vxbarff = yb[2]
+    Vybarff = yb[3]
+    lambda_2_barff = yb[4]
+    lambda_3_barff = yb[5]
+    lambda_4_barff = yb[6]
     tf = p[0]
     mf = m0 - abs(mdot)*tf
     Hf = (-np.sqrt(lambda_3_barff**2+lambda_4_barff**2)*f/mf/Vc 
             -(lambda_3_barff*Vxbarff)*eta*np.exp(-beta)*np.sqrt(Vxbarff**2)*Vc/mf-lambda_4_barff*g_accel/Vc)*tf + 1
     PSI = np.array([
-        # xbari - xbar0,
+        xbari - xbar0,
         ybari - ybar0,
         Vxbari - Vxbar0,
         Vybari - Vybar0,
@@ -159,10 +159,6 @@ def ascent_bcs_tf(ya, yb, p):
         Hf
     ])
     return PSI
-
-def Jacobian(tau, X, p):
-    pass
-    
 
 
 # Call bvp4c to solve the TPBVP. Point the solver to the functions
@@ -180,13 +176,13 @@ time = t0 + tau * (tf-t0)
 # Extract the solution for each state variable from the matrix Z and
 # convert them back into dimensional units by multiplying each by their
 # respective scaling constants.
-# x_sol = Z[0,:]*h/1000
-y_sol = Z[0,:]*h/1000
-vx_sol = Z[1,:]*Vc/1000
-vy_sol = Z[2,:]*Vc/1000
-lambda2_bar_sol = Z[3,:]
-lambda3_bar_sol = Z[4,:]
-lambda4_bar_sol = Z[5,:]
+x_sol = Z[0,:]*h/1000
+y_sol = Z[1,:]*h/1000
+vx_sol = Z[2,:]*Vc/1000
+vy_sol = Z[3,:]*Vc/1000
+lambda2_bar_sol = Z[4,:]
+lambda3_bar_sol = Z[5,:]
+lambda4_bar_sol = Z[6,:]
 ## Parameters for VARYING MASS and NO DRAG case
 m0 = 117020; # Initial mass of Titan II rocket (kg)
 mdot = (117020-4760)/139; # Mass flow rate (kg/s)
@@ -218,13 +214,13 @@ time_mass = t0+tau*(tf_mass-t0)
 # Extract the solution for each state variable from the matrix Z_mass and
 # convert them back into dimensional units by multiplying each by their
 # respective scaling constants.
-# x_sol_mass = Z_mass[0,:]*h/1000
-y_sol_mass = Z_mass[0,:]*h/1000
-vx_sol_mass = Z_mass[1,:]*Vc/1000
-vy_sol_mass = Z_mass[2,:]*Vc/1000
-lambda2_bar_sol_mass = Z_mass[3,:]
-lambda3_bar_sol_mass = Z_mass[4,:]
-lambda4_bar_sol_mass = Z_mass[5,:]
+x_sol_mass = Z_mass[0,:]*h/1000
+y_sol_mass = Z_mass[1,:]*h/1000
+vx_sol_mass = Z_mass[2,:]*Vc/1000
+vy_sol_mass = Z_mass[3,:]*Vc/1000
+lambda2_bar_sol_mass = Z_mass[4,:]
+lambda3_bar_sol_mass = Z_mass[5,:]
+lambda4_bar_sol_mass = Z_mass[6,:]
 ## Parameters for the VARYING MASS AND DRAG case
 CD = .5; # Drag coefficient
 eta = rhoref*CD*A/2; # Update eta, since CD is now nonzero
@@ -253,15 +249,13 @@ time_mass_drag = t0+tau*(tf_mass_drag-t0)
 # Extract the solution for each state variable from the matrix Z_mass_drag
 # and convert them back into dimensional units by multiplying each by their
 # respective scaling constants.
-# x_sol_mass_drag = Z_mass_drag[0,:]*h/1000
-y_sol_mass_drag = Z_mass_drag[0,:]*h/1000
-vx_sol_mass_drag = Z_mass_drag[1,:]*Vc/1000
-vy_sol_mass_drag = Z_mass_drag[2,:]*Vc/1000
-lambda2_bar_sol_mass_drag = Z_mass_drag[3,:]
-lambda3_bar_sol_mass_drag = Z_mass_drag[4,:]
-lambda4_bar_sol_mass_drag = Z_mass_drag[5,:]
-# Numerically integrate x since it only depends on Vx
-x_sol_mass_drag = [sum(vx_sol_mass_drag[:i] * time_mass_drag[:i]) for i in range(len(time_mass_drag))]
+x_sol_mass_drag = Z_mass_drag[0,:]*h/1000
+y_sol_mass_drag = Z_mass_drag[1,:]*h/1000
+vx_sol_mass_drag = Z_mass_drag[2,:]*Vc/1000
+vy_sol_mass_drag = Z_mass_drag[3,:]*Vc/1000
+lambda2_bar_sol_mass_drag = Z_mass_drag[4,:]
+lambda3_bar_sol_mass_drag = Z_mass_drag[5,:]
+lambda4_bar_sol_mass_drag = Z_mass_drag[6,:]
 ## Plot the solutions
 fig = plt.figure()
 ax = fig.add_subplot(221)
@@ -286,7 +280,7 @@ ax.set_ylabel('V_y [km/s]')
 ax.set_xlim(t0, tf_mass_drag)
 
 fig = plt.figure()
-plt.plot(time_mass_drag, np.rad2deg(np.arctan(lambda4_bar_sol_mass_drag / lambda3_bar_sol_mass_drag)),'k')
+plt.plot(time_mass_drag, np.rad2deg(np.arctan2(-lambda4_bar_sol_mass_drag, -lambda3_bar_sol_mass_drag)),'k')
 plt.xlabel('Time [s]')
 plt.ylabel('\theta[deg]')
 plt.xlim(t0, tf_mass_drag)
